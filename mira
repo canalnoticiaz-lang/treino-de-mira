@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aim Trainer - Treino de Mira</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #38bdf8;
+            margin-bottom: 5px;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        #stats-bar {
+            display: flex;
+            gap: 25px;
+            background: #1e293b;
+            padding: 12px 35px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #f1f5f9;
+        }
+
+        #game-container {
+            width: 800px;
+            height: 500px;
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .target {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff4757 40%, #ffffff 40%, #ffffff 70%, #ff4757 70%);
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 12px rgba(255, 71, 87, 0.6);
+            transition: transform 0.05s ease-out;
+        }
+
+        .target:active {
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        /* Start / End Screen Overlay */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            backdrop-filter: blur(4px);
+        }
+
+        .overlay h2 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #38bdf8;
+        }
+
+        .overlay p {
+            font-size: 1.1rem;
+            color: #cbd5e1;
+            margin-bottom: 25px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: white;
+            border: none;
+            padding: 14px 36px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.6);
+            background: linear-gradient(135deg, #0369a1, #1d4ed8);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            width: 300px;
+        }
+
+        .result-card {
+            background: #1e293b;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            text-align: center;
+        }
+
+        .result-card .val {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #38bdf8;
+        }
+
+        .result-card .lbl {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎯 Aim Trainer</h1>
+        <p class="subtitle">Treino de Precisão e Agilidade com o Mouse</p>
+    </header>
+
+    <div id="stats-bar">
+        <div class="stat-box">
+            <span class="stat-label">Tempo</span>
+            <span class="stat-value" id="time">30s</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Pontos</span>
+            <span class="stat-value" id="score">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Precisão</span>
+            <span class="stat-value" id="accuracy">100%</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Acertos</span>
+            <span class="stat-value" id="hits">0</span>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <!-- Tela Inicial -->
+        <div id="start-screen" class="overlay">
+            <h2>Pronto para Treinar?</h2>
+            <p>Destrua o máximo de alvos antes que o tempo acabe. Tente não errar para manter sua precisão alta!</p>
+            <button class="btn" onclick="startGame()">INICIAR JOGO</button>
+        </div>
+
+        <!-- Tela de Fim de Jogo -->
+        <div id="end-screen" class="overlay hidden">
+            <h2>Fim de Jogo!</h2>
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="val" id="res-score">0</div>
+                    <div class="lbl">Pontuação Final</div>
+                </div>
+                <div class="result-card">
+                    <div class="val" id="res-accuracy">0%</div>
+                    <div class="lbl">Precisão</div>
+                </div>
+                <div class="result-card">
+                    <div class="val" id="res-hits">0</div>
+                    <div class="lbl">Acertos</div>
+                </div>
+                <div class="result-card">
+                    <div class="val" id="res-clicks">0</div>
+                    <div class="lbl">Cliques Totais</div>
+                </div>
+            </div>
+            <button class="btn" onclick="startGame()">JOGAR NOVAMENTE</button>
+        </div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const timeEl = document.getElementById('time');
+        const scoreEl = document.getElementById('score');
+        const accuracyEl = document.getElementById('accuracy');
+        const hitsEl = document.getElementById('hits');
+
+        const startScreen = document.getElementById('start-screen');
+        const endScreen = document.getElementById('end-screen');
+
+        const resScore = document.getElementById('res-score');
+        const resAccuracy = document.getElementById('res-accuracy');
+        const resHits = document.getElementById('res-hits');
+        const resClicks = document.getElementById('res-clicks');
+
+        let score = 0;
+        let hits = 0;
+        let totalClicks = 0;
+        let timeLeft = 30;
+        let timer = null;
+        let gameActive = false;
+
+        const TARGET_SIZE = 50; // px
+
+        function startGame() {
+            // Reset variables
+            score = 0;
+            hits = 0;
+            totalClicks = 0;
+            timeLeft = 30;
+            gameActive = true;
+
+            updateStats();
+
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+
+            // Clear old targets
+            const oldTargets = document.querySelectorAll('.target');
+            oldTargets.forEach(t => t.remove());
+
+            // Spawn first target
+            spawnTarget();
+
+            // Start Countdown Timer
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                timeEl.textContent = timeLeft + 's';
+
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function spawnTarget() {
+            if (!gameActive) return;
+
+            const existingTarget = document.querySelector('.target');
+            if (existingTarget) existingTarget.remove();
+
+            const target = document.createElement('div');
+            target.classList.add('target');
+
+            const containerWidth = gameContainer.clientWidth;
+            const containerHeight = gameContainer.clientHeight;
+
+            const margin = TARGET_SIZE;
+            const x = Math.floor(Math.random() * (containerWidth - 2 * margin)) + margin;
+            const y = Math.floor(Math.random() * (containerHeight - 2 * margin)) + margin;
+
+            target.style.width = TARGET_SIZE + 'px';
+            target.style.height = TARGET_SIZE + 'px';
+            target.style.left = x + 'px';
+            target.style.top = y + 'px';
+
+            target.addEventListener('mousedown', (e) => {
+                e.stopPropagation(); // Prevent container click from counting as a miss
+                if (!gameActive) return;
+
+                hits++;
+                totalClicks++;
+                score += 100;
+
+                updateStats();
+                spawnTarget();
+            });
+
+            gameContainer.appendChild(target);
+        }
+
+        // Handle missed clicks inside the container
+        gameContainer.addEventListener('mousedown', () => {
+            if (!gameActive) return;
+
+            totalClicks++;
+            updateStats();
+        });
+
+        function updateStats() {
+            scoreEl.textContent = score;
+            hitsEl.textContent = hits;
+
+            const accuracy = totalClicks > 0 ? Math.round((hits / totalClicks) * 100) : 100;
+            accuracyEl.textContent = accuracy + '%';
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timer);
+
+            const oldTarget = document.querySelector('.target');
+            if (oldTarget) oldTarget.remove();
+
+            const finalAccuracy = totalClicks > 0 ? Math.round((hits / totalClicks) * 100) : 0;
+
+            resScore.textContent = score;
+            resAccuracy.textContent = finalAccuracy + '%';
+            resHits.textContent = hits;
+            resClicks.textContent = totalClicks;
+
+            endScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
